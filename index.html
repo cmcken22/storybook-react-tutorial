@@ -1,0 +1,2123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build a Component Library</title>
+<meta name="description" content="A hands-on tutorial: build a React + TypeScript component library with Storybook, design tokens and Radix primitives.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f7f4ee;
+  --paper-2: #efeae0;
+  --card: #fffdf9;
+  --ink: #1d1b17;
+  --ink-2: #4a463e;
+  --ink-3: #7d776b;
+  --rule: #ddd6c8;
+  --accent: #d9481c;
+  --accent-soft: #fbe4d9;
+  --tip: #2b6b4f;
+  --tip-soft: #dcefe5;
+  --warn: #8a5a00;
+  --warn-soft: #f8ebc9;
+  --code-bg: #1e1c19;
+  --code-ink: #ece6da;
+  --code-muted: #8f8778;
+  --code-head: #2a2723;
+  --tk-key: #f08d6b;
+  --tk-str: #b5d48a;
+  --tk-fn: #8fc4f0;
+  --tk-num: #e8c46b;
+  --tk-tag: #f0a3c4;
+  --tk-attr: #e8c46b;
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #161512;
+    --paper-2: #1f1d19;
+    --card: #1c1a17;
+    --ink: #f1ece2;
+    --ink-2: #c9c2b4;
+    --ink-3: #8f887a;
+    --rule: #34312b;
+    --accent: #ff7a4d;
+    --accent-soft: #3a2219;
+    --tip: #7fd0a8;
+    --tip-soft: #17291f;
+    --warn: #f0c060;
+    --warn-soft: #2e2512;
+    --code-bg: #0f0e0c;
+    --code-head: #1a1815;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #161512; --paper-2: #1f1d19; --card: #1c1a17; --ink: #f1ece2; --ink-2: #c9c2b4; --ink-3: #8f887a;
+  --rule: #34312b; --accent: #ff7a4d; --accent-soft: #3a2219; --tip: #7fd0a8; --tip-soft: #17291f;
+  --warn: #f0c060; --warn-soft: #2e2512; --code-bg: #0f0e0c; --code-head: #1a1815;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+::selection { background: var(--accent); color: #fff; }
+
+/* ---------- Hero ---------- */
+.hero {
+  border-bottom: 1px solid var(--rule);
+  padding: 72px 16px 56px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-inner { max-width: 1120px; margin: 0 auto; position: relative; z-index: 1; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 18px;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(40px, 7vw, 84px);
+  line-height: .98;
+  letter-spacing: -.03em;
+  margin: 0 0 24px;
+  max-width: 14ch;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lede { font-size: 20px; color: var(--ink-2); max-width: 58ch; margin: 0 0 32px; }
+.stack { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.stack li {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: var(--ink-2);
+}
+.hero-shapes { position: absolute; inset: 0; pointer-events: none; }
+.hero-shapes span { position: absolute; border: 1.5px solid var(--rule); }
+.hero-shapes .s1 { width: 220px; height: 220px; border-radius: 50%; right: 6%; top: 40px; }
+.hero-shapes .s2 { width: 140px; height: 140px; right: 18%; top: 170px; border-radius: 18px; transform: rotate(12deg); background: var(--accent-soft); border-color: transparent; }
+.hero-shapes .s3 { width: 90px; height: 44px; right: 4%; top: 290px; border-radius: 999px; background: var(--accent); border-color: transparent; }
+@media (max-width: 860px) { .hero-shapes { display: none; } }
+
+/* ---------- Layout ---------- */
+.layout {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 56px;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 0; } .toc { display: none; } }
+
+.toc { position: sticky; top: 0; align-self: start; padding: 40px 0; max-height: 100vh; overflow-y: auto; }
+.toc p { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 12px; }
+.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+.toc li { counter-increment: toc; }
+.toc a {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 6px 10px; margin-left: -10px;
+  border-radius: 8px;
+  color: var(--ink-2); text-decoration: none; font-size: 15px; line-height: 1.35;
+  transition: background .15s, color .15s;
+}
+.toc a::before { content: counter(toc, decimal-leading-zero); font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.toc a:hover { background: var(--paper-2); color: var(--ink); }
+.toc a.active { background: var(--ink); color: var(--paper); }
+.toc a.active::before { color: var(--accent); }
+
+main { padding: 40px 0 120px; min-width: 0; }
+
+/* ---------- Sections ---------- */
+section { padding: 32px 0 24px; border-top: 1px solid var(--rule); }
+section:first-child { border-top: 0; padding-top: 0; }
+.step-num { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: .06em; margin: 0 0 6px; }
+h2 {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.08;
+  margin: 0 0 18px;
+}
+h3 { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -.01em; margin: 36px 0 10px; }
+p { margin: 0 0 16px; max-width: 68ch; }
+ul.plain, ol.plain { padding-left: 22px; margin: 0 0 16px; max-width: 66ch; }
+ul.plain li, ol.plain li { margin-bottom: 6px; }
+:not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: .86em;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+/* ---------- Code blocks ---------- */
+.code {
+  margin: 18px 0 24px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--code-bg);
+  box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 12px 30px -18px rgba(0,0,0,.45);
+}
+.code-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--code-head);
+  padding: 8px 8px 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--code-muted);
+}
+.code-head .file { color: var(--code-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.code-head .tag { color: var(--code-muted); margin-left: 8px; }
+.copy {
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--code-ink);
+  background: transparent;
+  border: 1px solid #3f3a33;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.copy:hover { border-color: var(--accent); color: #fff; }
+.copy.done { border-color: #7fd0a8; color: #7fd0a8; }
+.code pre {
+  margin: 0;
+  padding: 16px 18px 18px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--code-ink);
+  tab-size: 2;
+}
+.code pre code { font-family: inherit; background: none; border: 0; padding: 0; }
+.token.comment, .token.prolog { color: var(--code-muted); font-style: italic; }
+.token.keyword, .token.operator.arrow, .token.important, .token.atrule { color: var(--tk-key); }
+.token.string, .token.template-string, .token.attr-value, .token.url { color: var(--tk-str); }
+.token.function, .token.class-name, .token.selector { color: var(--tk-fn); }
+.token.number, .token.boolean, .token.constant { color: var(--tk-num); }
+.token.tag, .token.builtin { color: var(--tk-tag); }
+.token.attr-name, .token.property { color: var(--tk-attr); }
+.token.punctuation { color: #b9b1a2; }
+.language-bash .token.function { color: var(--tk-fn); }
+
+/* ---------- Callouts ---------- */
+.callout {
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 20px 0;
+  font-size: 15.5px;
+  border: 1px solid transparent;
+  max-width: 72ch;
+}
+.callout p { margin: 0 0 8px; }
+.callout p:last-child { margin: 0; }
+.callout strong.label { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.callout.tip { background: var(--tip-soft); color: var(--ink); }
+.callout.tip strong.label { color: var(--tip); }
+.callout.warn { background: var(--warn-soft); }
+.callout.warn strong.label { color: var(--warn); }
+.callout.why { background: var(--accent-soft); }
+.callout.why strong.label { color: var(--accent); }
+
+.try {
+  border: 1.5px dashed var(--rule);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 28px 0 8px;
+  background: var(--card);
+}
+.try h4 { font-family: var(--font-display); font-size: 18px; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
+.try h4::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.try ul { margin: 0; padding-left: 20px; }
+.try li { margin-bottom: 4px; }
+
+/* ---------- Tree ---------- */
+.tree {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 16px 20px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--ink-2);
+  margin: 18px 0 24px;
+}
+.tree b { color: var(--accent); font-weight: 500; }
+
+/* ---------- Live demo (mirrors the tutorial's tokens) ---------- */
+.demo {
+  --color-bg: #ffffff;
+  --color-surface: #f6f7f9;
+  --color-text: #1a1d23;
+  --color-text-muted: #5b6270;
+  --color-border-strong: #9aa1ad;
+  --color-action-primary: #3b5bdb;
+  --color-action-primary-hover: #2f4ac0;
+  --color-action-primary-text: #ffffff;
+  --color-danger: #e03131;
+  --color-danger-hover: #c92a2a;
+  --color-focus: #3b5bdb;
+  --color-focus-ring: rgb(59 91 219 / .25);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 22px;
+  margin: 18px 0 24px;
+  position: relative;
+}
+.demo-label {
+  position: absolute; top: -10px; left: 16px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 4px;
+}
+.demo-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.demo-row + .demo-row { margin-top: 14px; }
+.demo-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.d-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; font-weight: 600; line-height: 1; font-size: 1rem;
+  padding: 12px 16px; border: 1px solid transparent; border-radius: 8px; cursor: pointer;
+  transition: background-color .12s, border-color .12s;
+}
+.d-btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.d-btn:disabled { opacity: .5; cursor: not-allowed; }
+.d-primary { background: var(--color-action-primary); color: var(--color-action-primary-text); }
+.d-primary:hover:not(:disabled) { background: var(--color-action-primary-hover); }
+.d-secondary { background: var(--color-bg); color: var(--color-text); border-color: var(--color-border-strong); }
+.d-secondary:hover:not(:disabled) { background: var(--color-surface); }
+.d-ghost { background: transparent; color: var(--color-action-primary); }
+.d-ghost:hover:not(:disabled) { background: var(--color-surface); }
+.d-danger { background: var(--color-danger); color: #fff; }
+.d-danger:hover:not(:disabled) { background: var(--color-danger-hover); }
+.d-sm { padding: 8px 12px; font-size: .875rem; }
+.d-lg { padding: 16px 24px; font-size: 1.125rem; }
+.d-field { display: flex; flex-direction: column; gap: 4px; }
+.d-field label, .d-legend { font-size: .875rem; font-weight: 600; }
+.d-control {
+  font: inherit; color: var(--color-text); background: var(--color-bg);
+  border: 1px solid var(--color-border-strong); border-radius: 8px; padding: 8px 12px;
+}
+.d-control:focus-visible { outline: none; border-color: var(--color-focus); box-shadow: 0 0 0 3px var(--color-focus-ring); }
+.d-control[aria-invalid="true"] { border-color: var(--color-danger); }
+.d-control:disabled { background: var(--color-surface); color: var(--color-text-muted); }
+textarea.d-control { resize: vertical; min-height: 5.5rem; line-height: 1.5; }
+.d-hint { font-size: .875rem; color: var(--color-text-muted); margin: 0; }
+.d-error { font-size: .875rem; color: var(--color-danger); margin: 0; }
+.d-choice { display: flex; align-items: center; gap: 8px; font-size: 1rem; cursor: pointer; }
+.d-choice input { appearance: none; margin: 0; width: 20px; height: 20px; border: 1px solid var(--color-border-strong); background: var(--color-bg); display: inline-grid; place-content: center; cursor: pointer; }
+.d-choice input[type="radio"] { border-radius: 50%; }
+.d-choice input[type="radio"]::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--color-action-primary); transform: scale(0); transition: transform .12s; }
+.d-choice input[type="radio"]:checked { border-color: var(--color-action-primary); }
+.d-choice input[type="radio"]:checked::before { transform: scale(1); }
+.d-choice input[type="checkbox"] { border-radius: 4px; }
+.d-choice input[type="checkbox"]:checked { background: var(--color-action-primary); border-color: var(--color-action-primary); }
+.d-choice input[type="checkbox"]::before { content: ""; width: 10px; height: 6px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) scale(0); margin-top: -2px; }
+.d-choice input[type="checkbox"]:checked::before { transform: rotate(-45deg) scale(1); }
+.d-choice input:focus-visible { box-shadow: 0 0 0 3px var(--color-focus-ring); border-color: var(--color-focus); outline: none; }
+.d-stack { display: flex; flex-direction: column; gap: 8px; }
+.d-card { display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 12px; background: var(--color-bg); border: 1px solid #d4d8df; }
+.d-card-elevated { border-color: transparent; box-shadow: 0 4px 16px rgb(26 29 35 / .08), 0 1px 2px rgb(26 29 35 / .06); }
+.d-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.d-card-text { display: flex; flex-direction: column; gap: 4px; }
+.d-card-title { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.3; }
+.d-card-desc { margin: 0; font-size: .875rem; color: var(--color-text-muted); line-height: 1.5; }
+.d-card-content { margin: 0; line-height: 1.5; }
+.d-card-footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.d-card-dismiss { margin: -8px -8px 0 0; }
+
+/* ---------- Footer ---------- */
+.finish {
+  margin-top: 40px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 18px;
+  padding: 32px;
+}
+.finish h2 { color: var(--paper); }
+.finish p { color: color-mix(in srgb, var(--paper) 80%, transparent); }
+.finish a { color: var(--accent); }
+.finish :not(pre) > code { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.15); color: var(--paper); }
+.finish ul { padding-left: 20px; }
+.finish li { margin-bottom: 6px; }
+
+.theme-toggle {
+  position: fixed; right: 16px; bottom: 16px; z-index: 10;
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 999px;
+  padding: 8px 14px; cursor: pointer;
+  box-shadow: 0 8px 24px -12px rgba(0,0,0,.35);
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-shapes" aria-hidden="true"><span class="s1"></span><span class="s2"></span><span class="s3"></span></div>
+  <div class="hero-inner">
+    <p class="eyebrow">A hands-on tutorial · ~2 hours</p>
+    <h1>Build a <em>component library</em> from scratch</h1>
+    <p class="lede">Start with one button, see it in Storybook, give it variants, then grow it into a small, accessible set of form components driven by design tokens, and compose them into a Card. The way real design-system teams do it.</p>
+    <ul class="stack">
+      <li>React 19</li><li>TypeScript</li><li>Vite</li><li>Storybook</li><li>CSS Modules</li><li>classnames</li><li>Design tokens</li><li>Radix Primitives</li>
+    </ul>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Tutorial steps">
+    <p>Steps</p>
+    <ol>
+      <li><a href="#setup">Set up the project</a></li>
+      <li><a href="#tokens">Design tokens</a></li>
+      <li><a href="#button">Your first Button</a></li>
+      <li><a href="#storybook">Show it in Storybook</a></li>
+      <li><a href="#variants">Add variants</a></li>
+      <li><a href="#input">Input</a></li>
+      <li><a href="#textarea">TextArea</a></li>
+      <li><a href="#radio">Radio group</a></li>
+      <li><a href="#checkbox">Checkbox</a></li>
+      <li><a href="#card">Card (composition)</a></li>
+      <li><a href="#wrap">Wrap up</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+<!-- ============ 1. SETUP ============ -->
+<section id="setup">
+  <p class="step-num">STEP 01</p>
+  <h2>Set up the project</h2>
+  <p>You need <strong>Node 20 or newer</strong>. Check with <code>node -v</code>. We'll scaffold a React + TypeScript project with Vite, then add Storybook on top.</p>
+
+  <script type="text/plain" data-lang="bash" data-file="Terminal">npm create vite@latest ui-kit -- --template react-ts
+cd ui-kit
+npm install</script>
+
+  <p>Now add Storybook. The installer detects React and Vite on its own. Accept the recommended options when it asks.</p>
+
+  <script type="text/plain" data-lang="bash" data-file="Terminal">npm create storybook@latest</script>
+
+  <p>When it finishes, Storybook opens at <code>http://localhost:6006</code>. You can start it again any time with:</p>
+
+  <script type="text/plain" data-lang="bash" data-file="Terminal">npm run storybook</script>
+
+  <p>The installer adds some example stories in <code>src/stories/</code>. Delete that whole folder. We're writing our own.</p>
+
+  <p>Last, install <code>classnames</code>. Its <code>cx</code> helper combines CSS class names, and every component uses it.</p>
+
+  <script type="text/plain" data-lang="bash" data-file="Terminal">npm install classnames</script>
+
+  <p>Here's where we're headed. Each component gets its own folder with three files: the component, its styles, and its stories. Styles are never shared between components. If a bigger component needs a button, it <em>renders our Button</em> instead of borrowing its CSS.</p>
+
+<div class="tree">src/
+├── <b>styles/</b>
+│   └── tokens.css           <span style="opacity:.6">← design tokens (the only global CSS)</span>
+├── <b>components/</b>
+│   ├── Button/
+│   │   ├── Button.tsx
+│   │   ├── Button.module.css
+│   │   └── Button.stories.tsx
+│   ├── Input/
+│   ├── TextArea/
+│   ├── RadioGroup/
+│   ├── Checkbox/
+│   └── Card/                <span style="opacity:.6">← composed from Button</span>
+└── index.ts                 <span style="opacity:.6">← public exports</span></div>
+
+  <div class="callout warn">
+    <strong class="label">Version note</strong>
+    <p>This guide uses Storybook 9+ imports: <code>@storybook/react-vite</code> and <code>storybook/test</code>. If <code>package.json</code> shows Storybook 8, use <code>@storybook/react</code> and <code>@storybook/test</code> instead. Everything else is the same.</p>
+  </div>
+</section>
+
+<!-- ============ 2. TOKENS ============ -->
+<section id="tokens">
+  <p class="step-num">STEP 02</p>
+  <h2>Design tokens</h2>
+  <p>Before any components, we define the design decisions they'll share: colors, spacing, radii, type sizes. These are <strong>design tokens</strong>, stored as CSS custom properties.</p>
+  <p>There are two layers. A <strong>palette</strong> of raw values (<code>--blue-500</code>), and <strong>semantic tokens</strong> that describe a job (<code>--color-action-primary</code>). Components only ever use the semantic ones.</p>
+
+  <script type="text/plain" data-lang="css" data-file="src/styles/tokens.css">:root {
+  /* ---- Palette: raw values. Components never use these directly. ---- */
+  --blue-500: #3b5bdb;
+  --blue-600: #2f4ac0;
+  --red-500: #e03131;
+  --red-600: #c92a2a;
+  --gray-0: #ffffff;
+  --gray-50: #f6f7f9;
+  --gray-300: #d4d8df;
+  --gray-500: #9aa1ad;
+  --gray-700: #5b6270;
+  --gray-900: #1a1d23;
+
+  /* ---- Semantic tokens: what components use. ---- */
+  --color-bg: var(--gray-0);
+  --color-surface: var(--gray-50);
+  --color-text: var(--gray-900);
+  --color-text-muted: var(--gray-700);
+  --color-border: var(--gray-300);
+  --color-border-strong: var(--gray-500);
+
+  --color-action-primary: var(--blue-500);
+  --color-action-primary-hover: var(--blue-600);
+  --color-action-primary-text: var(--gray-0);
+
+  --color-danger: var(--red-500);
+  --color-danger-hover: var(--red-600);
+
+  --color-focus: var(--blue-500);
+  --color-focus-ring: rgb(59 91 219 / 0.25);
+
+  /* ---- Shape, spacing, type ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-md: 0 4px 16px rgb(26 29 35 / 0.08), 0 1px 2px rgb(26 29 35 / 0.06);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+}</script>
+
+  <p>Storybook renders components in its own preview frame, so it needs to load the tokens too. Open <code>.storybook/preview.ts</code> and add the import at the top:</p>
+
+  <script type="text/plain" data-lang="ts" data-file=".storybook/preview.ts">import type { Preview } from '@storybook/react-vite';
+import '../src/styles/tokens.css';
+
+const preview: Preview = {
+  parameters: {
+    controls: {
+      matchers: {
+        color: /(background|color)$/i,
+        date: /Date$/i,
+      },
+    },
+  },
+};
+
+export default preview;</script>
+
+  <div class="callout why">
+    <strong class="label">Why two layers?</strong>
+    <p>If you rebrand from blue to purple, you change one line: <code>--color-action-primary</code>. Every button, focus ring and radio dot follows. Dark mode is the same idea: redefine the semantic tokens, and you never touch a component.</p>
+  </div>
+</section>
+
+<!-- ============ 3. BUTTON ============ -->
+<section id="button">
+  <p class="step-num">STEP 03</p>
+  <h2>Your first Button</h2>
+  <p>Start simple: a button that looks like our brand and behaves exactly like a native <code>&lt;button&gt;</code>.</p>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Button/Button.tsx">import type { ComponentProps } from 'react';
+import cx from 'classnames';
+import styles from './Button.module.css';
+
+// Accept every prop a native <button> accepts (onClick, disabled, aria-*, ref…)
+export type ButtonProps = ComponentProps<'button'>;
+
+export function Button({ className, type = 'button', ...props }: ButtonProps) {
+  return <button type={type} className={cx(styles.button, className)} {...props} />;
+}</script>
+
+  <p>A few deliberate choices here:</p>
+  <ul class="plain">
+    <li><strong><code>ComponentProps&lt;'button'&gt;</code></strong> means anyone using your Button gets the full native API for free, typed. You don't re-declare <code>onClick</code>, <code>disabled</code> or <code>aria-label</code>.</li>
+    <li><strong><code>type = 'button'</code></strong>: a native button inside a form defaults to <code>submit</code>, which surprises people. We make the safe choice the default.</li>
+    <li><strong><code>...props</code> is spread last</strong>, so <code>children</code>, event handlers and (in React 19) <code>ref</code> all pass straight through.</li>
+    <li><strong><code>className</code> is merged, not replaced</strong>, so consumers can add layout styles without losing ours. <code>cx</code> joins the classes and skips any that are <code>undefined</code>.</li>
+  </ul>
+
+  <div class="callout tip">
+    <strong class="label">How cx works</strong>
+    <p><code>cx('a', undefined, 'b')</code> gives <code>"a b"</code>. It also takes an object for conditional classes: <code>cx(styles.button, { [styles.fullWidth]: fullWidth })</code> adds <code>fullWidth</code> only when the prop is true. You'll use both forms throughout.</p>
+  </div>
+
+  <script type="text/plain" data-lang="css" data-file="src/components/Button/Button.module.css">.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  line-height: 1;
+
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-action-primary-hover);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}</script>
+
+  <div class="callout tip">
+    <strong class="label">CSS Modules</strong>
+    <p>Naming the file <code>*.module.css</code> makes Vite scope every class to this component. <code>.button</code> here can't clash with a <code>.button</code> anywhere else.</p>
+  </div>
+</section>
+
+<!-- ============ 4. STORYBOOK ============ -->
+<section id="storybook">
+  <p class="step-num">STEP 04</p>
+  <h2>Show it in Storybook</h2>
+  <p>A <strong>story</strong> is one rendered state of a component. You'll write a stories file next to every component. It becomes a live playground, documentation, and later, a test.</p>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Button/Button.stories.tsx">import type { Meta, StoryObj } from '@storybook/react-vite';
+import { fn } from 'storybook/test';
+import { Button } from './Button';
+
+const meta = {
+  title: 'Components/Button',   // where it appears in the sidebar
+  component: Button,
+  tags: ['autodocs'],           // auto-generates a Docs page from your props
+  args: {                       // default props for every story below
+    children: 'Button',
+    onClick: fn(),              // logs clicks in the Actions panel
+  },
+} satisfies Meta<typeof Button>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+
+export const Disabled: Story = {
+  args: { disabled: true },
+};</script>
+
+  <p>Run <code>npm run storybook</code> and open <strong>Components → Button</strong>. Things to try:</p>
+  <ul class="plain">
+    <li>Open the <strong>Controls</strong> panel and edit <code>children</code>. The button updates live.</li>
+    <li>Click the button and watch the <strong>Actions</strong> panel log the event.</li>
+    <li>Open the <strong>Docs</strong> page. Storybook read your TypeScript types and built a props table.</li>
+  </ul>
+
+  <div class="callout why">
+    <strong class="label">Why Storybook?</strong>
+    <p>You're building the button <em>in isolation</em>: no app, no routing, no data. Every state you care about (disabled, long label, error) is one click away instead of buried three screens deep in an app.</p>
+  </div>
+</section>
+
+<!-- ============ 5. VARIANTS ============ -->
+<section id="variants">
+  <p class="step-num">STEP 05</p>
+  <h2>Add variants</h2>
+  <p>Real buttons come in flavors. We'll add two props: <code>variant</code> (what it means) and <code>size</code> (how big it is). Here's the target:</p>
+
+  <div class="demo">
+    <span class="demo-label">Live preview</span>
+    <div class="demo-row">
+      <button class="d-btn d-primary">Primary</button>
+      <button class="d-btn d-secondary">Secondary</button>
+      <button class="d-btn d-ghost">Ghost</button>
+      <button class="d-btn d-danger">Danger</button>
+      <button class="d-btn d-primary" disabled>Disabled</button>
+    </div>
+    <div class="demo-row">
+      <button class="d-btn d-primary d-sm">Small</button>
+      <button class="d-btn d-primary">Medium</button>
+      <button class="d-btn d-primary d-lg">Large</button>
+    </div>
+  </div>
+
+  <p>Update the component. TypeScript union types make the allowed values explicit, and the editor autocompletes them.</p>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Button/Button.tsx">import type { ComponentProps } from 'react';
+import cx from 'classnames';
+import styles from './Button.module.css';
+
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
+
+export type ButtonProps = ComponentProps<'button'> & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+};
+
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  className,
+  type = 'button',
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      type={type}
+      className={cx(styles.button, styles[variant], styles[size], className)}
+      {...props}
+    />
+  );
+}</script>
+
+  <p>In the CSS, take the color and padding out of <code>.button</code> and add a class per variant and size. The base class keeps everything they share.</p>
+
+  <script type="text/plain" data-lang="css" data-file="src/components/Button/Button.module.css">.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Variants ---- */
+.primary {
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+}
+.primary:hover:not(:disabled) {
+  background: var(--color-action-primary-hover);
+}
+
+.secondary {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+.secondary:hover:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-action-primary);
+}
+.ghost:hover:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.danger {
+  background: var(--color-danger);
+  color: var(--color-action-primary-text);
+}
+.danger:hover:not(:disabled) {
+  background: var(--color-danger-hover);
+}
+
+/* ---- Sizes ---- */
+.sm {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+.md {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-md);
+}
+.lg {
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--font-size-lg);
+}</script>
+
+  <p>Now give each variant a story, plus one story that shows all the sizes side by side. <code>argTypes</code> turns <code>variant</code> and <code>size</code> into radio buttons in the Controls panel.</p>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Button/Button.stories.tsx">import type { Meta, StoryObj } from '@storybook/react-vite';
+import { fn } from 'storybook/test';
+import { Button } from './Button';
+
+const meta = {
+  title: 'Components/Button',
+  component: Button,
+  tags: ['autodocs'],
+  args: {
+    children: 'Button',
+    onClick: fn(),
+  },
+  argTypes: {
+    variant: {
+      control: 'inline-radio',
+      options: ['primary', 'secondary', 'ghost', 'danger'],
+    },
+    size: {
+      control: 'inline-radio',
+      options: ['sm', 'md', 'lg'],
+    },
+  },
+} satisfies Meta<typeof Button>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Primary: Story = {
+  args: { variant: 'primary' },
+};
+
+export const Secondary: Story = {
+  args: { variant: 'secondary' },
+};
+
+export const Ghost: Story = {
+  args: { variant: 'ghost' },
+};
+
+export const Danger: Story = {
+  args: { variant: 'danger', children: 'Delete project' },
+};
+
+export const Disabled: Story = {
+  args: { disabled: true },
+};
+
+// A custom render lets one story show several buttons at once
+export const Sizes: Story = {
+  render: (args) => (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <Button {...args} size="sm">Small</Button>
+      <Button {...args} size="md">Medium</Button>
+      <Button {...args} size="lg">Large</Button>
+    </div>
+  ),
+};</script>
+
+  <div class="callout tip">
+    <strong class="label">Check your work</strong>
+    <p>In the <strong>Primary</strong> story, switch <code>variant</code> to <code>danger</code> in Controls. Then open <strong>Sizes</strong> and switch the variant there. All three buttons change, because they share <code>args</code>.</p>
+  </div>
+
+  <div class="try">
+    <h4>Try it yourself</h4>
+    <ul>
+      <li>Add a <code>fullWidth</code> boolean prop that makes the button <code>width: 100%</code>.</li>
+      <li>Add a <code>loading</code> prop: show a small spinner, set <code>aria-busy</code>, and disable clicks while it's true.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 6. INPUT ============ -->
+<section id="input">
+  <p class="step-num">STEP 06</p>
+  <h2>Input</h2>
+  <p>Form fields are where accessibility gets real. Our Input <em>always</em> has a label (it's required in the types), and it wires up hint and error text so screen readers announce them.</p>
+
+  <div class="demo">
+    <span class="demo-label">Live preview</span>
+    <div class="demo-grid">
+      <div class="d-field">
+        <label for="dm-email">Email</label>
+        <input id="dm-email" class="d-control" placeholder="you@example.com" aria-describedby="dm-email-hint">
+        <p id="dm-email-hint" class="d-hint">We'll never share your email.</p>
+      </div>
+      <div class="d-field">
+        <label for="dm-email2">Email</label>
+        <input id="dm-email2" class="d-control" value="not-an-email" aria-invalid="true" aria-describedby="dm-email2-err">
+        <p id="dm-email2-err" class="d-error">Enter a valid email address.</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Input/Input.tsx">import { useId, type ComponentProps } from 'react';
+import cx from 'classnames';
+import styles from './Input.module.css';
+
+export type InputProps = ComponentProps<'input'> & {
+  label: string;
+  hint?: string;
+  error?: string;
+};
+
+export function Input({ label, hint, error, id, className, ...props }: InputProps) {
+  // useId gives a stable, unique id so the label and messages can point at the input
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const hintId = `${inputId}-hint`;
+  const errorId = `${inputId}-error`;
+
+  const describedBy = cx({ [hintId]: hint, [errorId]: error }) || undefined;
+
+  return (
+    <div className={cx(styles.field, className)}>
+      <label htmlFor={inputId} className={styles.label}>
+        {label}
+      </label>
+
+      <input
+        id={inputId}
+        className={styles.input}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        {...props}
+      />
+
+      {hint && <p id={hintId} className={styles.hint}>{hint}</p>}
+      {error && <p id={errorId} className={styles.error}>{error}</p>}
+    </div>
+  );
+}</script>
+
+  <div class="callout tip">
+    <strong class="label">cx isn't only for classes</strong>
+    <p><code>aria-describedby</code> is a space-separated list of ids, the same shape as <code>className</code>. So <code>cx</code> builds it too, including only the ids for messages that actually render.</p>
+  </div>
+
+  <script type="text/plain" data-lang="css" data-file="src/components/Input/Input.module.css">.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.input {
+  font: inherit;
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.input:disabled {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.hint,
+.error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.hint {
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-danger);
+}</script>
+
+  <div class="callout why">
+    <strong class="label">What the aria attributes do</strong>
+    <p><code>htmlFor</code> links the label to the input, so clicking the label focuses it. <code>aria-describedby</code> makes a screen reader read the hint or error after the label. <code>aria-invalid</code> announces "invalid" and gives us a hook for the red border in CSS.</p>
+  </div>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Input/Input.stories.tsx">import type { Meta, StoryObj } from '@storybook/react-vite';
+import { Input } from './Input';
+
+const meta = {
+  title: 'Components/Input',
+  component: Input,
+  tags: ['autodocs'],
+  args: {
+    label: 'Email',
+    placeholder: 'you@example.com',
+  },
+} satisfies Meta<typeof Input>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+
+export const WithHint: Story = {
+  args: { hint: "We'll never share your email." },
+};
+
+export const WithError: Story = {
+  args: {
+    defaultValue: 'not-an-email',
+    error: 'Enter a valid email address.',
+  },
+};
+
+export const Disabled: Story = {
+  args: { disabled: true },
+};</script>
+
+  <div class="try">
+    <h4>Try it yourself</h4>
+    <ul>
+      <li>Add a <code>required</code> story and show an asterisk after the label when <code>props.required</code> is true.</li>
+      <li>Add a <code>size</code> prop (<code>sm</code> / <code>md</code>) that matches the Button sizes, so they line up in a toolbar.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 7. TEXTAREA ============ -->
+<section id="textarea">
+  <p class="step-num">STEP 07</p>
+  <h2>TextArea</h2>
+  <p>Same pattern as Input, with its own stylesheet, plus one new feature: an optional character counter.</p>
+
+  <div class="demo">
+    <span class="demo-label">Live preview</span>
+    <div class="d-field" style="max-width:480px">
+      <label for="dm-bio">Bio</label>
+      <textarea id="dm-bio" class="d-control" maxlength="200" placeholder="Tell us about yourself"></textarea>
+      <div style="display:flex;justify-content:space-between;gap:12px">
+        <p class="d-hint">Shown on your public profile.</p>
+        <span class="d-hint" id="dm-bio-count" style="font-variant-numeric:tabular-nums">0 / 200</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/TextArea/TextArea.tsx">import { useId, useState, type ChangeEvent, type ComponentProps } from 'react';
+import cx from 'classnames';
+import styles from './TextArea.module.css';
+
+export type TextAreaProps = ComponentProps<'textarea'> & {
+  label: string;
+  hint?: string;
+  error?: string;
+  showCount?: boolean;
+};
+
+export function TextArea({
+  label,
+  hint,
+  error,
+  showCount = false,
+  id,
+  className,
+  rows = 4,
+  onChange,
+  ...props
+}: TextAreaProps) {
+  const generatedId = useId();
+  const textAreaId = id ?? generatedId;
+  const hintId = `${textAreaId}-hint`;
+  const errorId = `${textAreaId}-error`;
+  const describedBy = cx({ [hintId]: hint, [errorId]: error }) || undefined;
+
+  // Track length ourselves when uncontrolled; read it from `value` when controlled
+  const [internalLength, setInternalLength] = useState(String(props.defaultValue ?? '').length);
+  const length = props.value !== undefined ? String(props.value).length : internalLength;
+  const nearLimit = props.maxLength !== undefined && props.maxLength - length <= 10;
+
+  function handleChange(event: ChangeEvent<HTMLTextAreaElement>) {
+    setInternalLength(event.target.value.length);
+    onChange?.(event); // still call the consumer's handler
+  }
+
+  return (
+    <div className={cx(styles.field, className)}>
+      <label htmlFor={textAreaId} className={styles.label}>
+        {label}
+      </label>
+
+      <textarea
+        id={textAreaId}
+        rows={rows}
+        className={styles.textarea}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        onChange={handleChange}
+        {...props}
+      />
+
+      {(hint || error || showCount) && (
+        <div className={styles.footer}>
+          <div>
+            {hint && <p id={hintId} className={styles.hint}>{hint}</p>}
+            {error && <p id={errorId} className={styles.error}>{error}</p>}
+          </div>
+          {showCount && (
+            <span className={cx(styles.count, { [styles.countWarning]: nearLimit })}>
+              {props.maxLength ? `${length} / ${props.maxLength}` : length}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}</script>
+
+  <script type="text/plain" data-lang="css" data-file="src/components/TextArea/TextArea.module.css">.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.textarea {
+  font: inherit;
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  min-height: 6rem;
+  resize: vertical;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.textarea:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
+.textarea:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.textarea[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.textarea:disabled {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.hint,
+.error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.hint {
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.count {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums; /* digits don't jiggle as you type */
+}
+
+.countWarning {
+  color: var(--color-danger);
+}</script>
+
+  <div class="callout why">
+    <strong class="label">Isn't this duplicated from Input?</strong>
+    <p>Yes, on purpose. Each component owns its styles, so changing how a TextArea looks can never break an Input. What they <em>do</em> share is the tokens: both read <code>--color-border-strong</code> and <code>--color-focus-ring</code>, so they stay visually consistent without being coupled.</p>
+  </div>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/TextArea/TextArea.stories.tsx">import type { Meta, StoryObj } from '@storybook/react-vite';
+import { TextArea } from './TextArea';
+
+const meta = {
+  title: 'Components/TextArea',
+  component: TextArea,
+  tags: ['autodocs'],
+  args: {
+    label: 'Bio',
+    placeholder: 'Tell us about yourself',
+  },
+} satisfies Meta<typeof TextArea>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+
+export const WithCount: Story = {
+  args: {
+    hint: 'Shown on your public profile.',
+    showCount: true,
+    maxLength: 200,
+  },
+};
+
+export const WithError: Story = {
+  args: {
+    defaultValue: 'Hi',
+    error: 'Bio must be at least 20 characters.',
+  },
+};
+
+export const Disabled: Story = {
+  args: { disabled: true, defaultValue: 'You can’t edit this right now.' },
+};</script>
+
+  <div class="try">
+    <h4>Try it yourself</h4>
+    <ul>
+      <li>Add an <code>autoGrow</code> prop that resizes the textarea to fit its content as the user types. Hint: set <code>height</code> from <code>scrollHeight</code> in the change handler.</li>
+      <li>Add a story where the counter is in its warning state from the start.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 8. RADIO ============ -->
+<section id="radio">
+  <p class="step-num">STEP 08</p>
+  <h2>Radio group, with Radix</h2>
+  <p>Inputs and textareas are easy to make accessible by hand. Radio groups aren't: arrow keys should move between options, only one option should be in the tab order, and screen readers need the right roles.</p>
+  <p>Instead of writing all that ourselves, we use <strong>Radix Primitives</strong>. They're unstyled, accessible building blocks. Radix handles behavior; we handle looks, with our tokens.</p>
+
+  <script type="text/plain" data-lang="bash" data-file="Terminal">npm install @radix-ui/react-radio-group @radix-ui/react-checkbox</script>
+
+  <div class="demo">
+    <span class="demo-label">Live preview</span>
+    <div class="d-stack" role="radiogroup" aria-labelledby="dm-speed">
+      <span id="dm-speed" class="d-legend">Delivery speed</span>
+      <label class="d-choice"><input type="radio" name="dm-speed" checked> Standard (5–7 days)</label>
+      <label class="d-choice"><input type="radio" name="dm-speed"> Express (2–3 days)</label>
+      <label class="d-choice"><input type="radio" name="dm-speed"> Overnight</label>
+    </div>
+  </div>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/RadioGroup/RadioGroup.tsx">import { useId } from 'react';
+import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
+import cx from 'classnames';
+import styles from './RadioGroup.module.css';
+
+export type RadioOption = {
+  value: string;
+  label: string;
+  disabled?: boolean;
+};
+
+// Keep all of Radix's props (value, defaultValue, onValueChange, orientation…)
+// but replace `children` with a simple `options` array
+export type RadioGroupProps = Omit<RadioGroupPrimitive.RadioGroupProps, 'children'> & {
+  label: string;
+  options: RadioOption[];
+};
+
+export function RadioGroup({ label, options, className, ...props }: RadioGroupProps) {
+  const labelId = useId();
+
+  return (
+    <div className={cx(styles.group, className)}>
+      <span id={labelId} className={styles.legend}>
+        {label}
+      </span>
+
+      <RadioGroupPrimitive.Root aria-labelledby={labelId} className={styles.root} {...props}>
+        {options.map((option) => {
+          const itemId = `${labelId}-${option.value}`;
+          return (
+            <div key={option.value} className={styles.option}>
+              <RadioGroupPrimitive.Item
+                id={itemId}
+                value={option.value}
+                disabled={option.disabled}
+                className={styles.item}
+              >
+                <RadioGroupPrimitive.Indicator className={styles.indicator} />
+              </RadioGroupPrimitive.Item>
+              <label htmlFor={itemId} className={styles.optionLabel}>
+                {option.label}
+              </label>
+            </div>
+          );
+        })}
+      </RadioGroupPrimitive.Root>
+    </div>
+  );
+}</script>
+
+  <p>Radix exposes state through data attributes like <code>data-state="checked"</code> and <code>data-disabled</code>. We style those directly; no extra classes or JavaScript needed.</p>
+
+  <script type="text/plain" data-lang="css" data-file="src/components/RadioGroup/RadioGroup.module.css">.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+}
+
+.legend {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.root[aria-orientation='horizontal'] {
+  flex-direction: row;
+  gap: var(--space-4);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.item {
+  all: unset;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: var(--color-bg);
+  cursor: pointer;
+}
+
+.item:hover:not([data-disabled]) {
+  border-color: var(--color-action-primary);
+}
+
+.item:focus-visible {
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.item[data-state='checked'] {
+  border-color: var(--color-action-primary);
+}
+
+.item[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-action-primary);
+}
+
+.optionLabel {
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  cursor: pointer;
+}</script>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/RadioGroup/RadioGroup.stories.tsx">import type { Meta, StoryObj } from '@storybook/react-vite';
+import { fn } from 'storybook/test';
+import { RadioGroup } from './RadioGroup';
+
+const meta = {
+  title: 'Components/RadioGroup',
+  component: RadioGroup,
+  tags: ['autodocs'],
+  args: {
+    label: 'Delivery speed',
+    defaultValue: 'standard',
+    onValueChange: fn(),
+    options: [
+      { value: 'standard', label: 'Standard (5–7 days)' },
+      { value: 'express', label: 'Express (2–3 days)' },
+      { value: 'overnight', label: 'Overnight' },
+    ],
+  },
+} satisfies Meta<typeof RadioGroup>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+
+export const Horizontal: Story = {
+  args: { orientation: 'horizontal' },
+};
+
+export const WithDisabledOption: Story = {
+  args: {
+    options: [
+      { value: 'standard', label: 'Standard (5–7 days)' },
+      { value: 'express', label: 'Express (2–3 days)' },
+      { value: 'overnight', label: 'Overnight (sold out)', disabled: true },
+    ],
+  },
+};
+
+export const Disabled: Story = {
+  args: { disabled: true },
+};</script>
+
+  <div class="callout tip">
+    <strong class="label">Test the keyboard</strong>
+    <p>In Storybook, click into the canvas and press <kbd>Tab</kbd> until a radio is focused, then use the arrow keys. Selection moves between options and skips the disabled one. That's Radix doing the work.</p>
+  </div>
+</section>
+
+<!-- ============ 9. CHECKBOX ============ -->
+<section id="checkbox">
+  <p class="step-num">STEP 09</p>
+  <h2>Checkbox</h2>
+  <p>Same approach. The Radix Checkbox also supports a third state, <code>'indeterminate'</code>, used for "select all" when only some items are checked.</p>
+
+  <div class="demo">
+    <span class="demo-label">Live preview</span>
+    <div class="d-stack">
+      <label class="d-choice"><input type="checkbox" checked> Email me product updates</label>
+      <label class="d-choice"><input type="checkbox"> Email me the newsletter</label>
+    </div>
+  </div>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Checkbox/Checkbox.tsx">import { useId } from 'react';
+import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
+import cx from 'classnames';
+import styles from './Checkbox.module.css';
+
+export type CheckboxProps = Omit<CheckboxPrimitive.CheckboxProps, 'children'> & {
+  label: string;
+};
+
+export function Checkbox({ label, id, className, checked, ...props }: CheckboxProps) {
+  const generatedId = useId();
+  const checkboxId = id ?? generatedId;
+
+  return (
+    <div className={cx(styles.wrapper, className)}>
+      <CheckboxPrimitive.Root id={checkboxId} checked={checked} className={styles.root} {...props}>
+        <CheckboxPrimitive.Indicator className={styles.indicator}>
+          {checked === 'indeterminate' ? (
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4 8h8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M3.5 8.5l3 3 6-7"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </CheckboxPrimitive.Indicator>
+      </CheckboxPrimitive.Root>
+
+      <label htmlFor={checkboxId} className={styles.label}>
+        {label}
+      </label>
+    </div>
+  );
+}</script>
+
+  <script type="text/plain" data-lang="css" data-file="src/components/Checkbox/Checkbox.module.css">.wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+}
+
+.root {
+  all: unset;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-action-primary-text);
+  cursor: pointer;
+}
+
+.root:hover:not([data-disabled]) {
+  border-color: var(--color-action-primary);
+}
+
+.root:focus-visible {
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.root[data-state='checked'],
+.root[data-state='indeterminate'] {
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+}
+
+.root[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.indicator {
+  display: flex;
+}
+
+.indicator svg {
+  width: 14px;
+  height: 14px;
+}
+
+.label {
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  cursor: pointer;
+}</script>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Checkbox/Checkbox.stories.tsx">import type { Meta, StoryObj } from '@storybook/react-vite';
+import { fn } from 'storybook/test';
+import { Checkbox } from './Checkbox';
+
+const meta = {
+  title: 'Components/Checkbox',
+  component: Checkbox,
+  tags: ['autodocs'],
+  args: {
+    label: 'Email me product updates',
+    onCheckedChange: fn(),
+  },
+} satisfies Meta<typeof Checkbox>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+
+export const Checked: Story = {
+  args: { defaultChecked: true },
+};
+
+export const Indeterminate: Story = {
+  args: { checked: 'indeterminate', label: 'Select all' },
+};
+
+export const Disabled: Story = {
+  args: { disabled: true },
+};</script>
+
+  <div class="try">
+    <h4>Try it yourself</h4>
+    <ul>
+      <li>Build a <code>Switch</code> with <code>@radix-ui/react-switch</code>. It follows exactly the same pattern.</li>
+      <li>Write a story where a "Select all" checkbox controls three others and goes indeterminate when only some are checked. You'll need <code>useState</code> inside a <code>render</code> function.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 10. CARD ============ -->
+<section id="card">
+  <p class="step-num">STEP 10</p>
+  <h2>Card: an advanced component, by composition</h2>
+  <p>Everything so far has been a <em>basic</em> component: one job, one element. A Card is an <em>advanced</em> component. Instead of inventing new buttons or new styles, it's assembled from pieces that already exist.</p>
+  <p>Composition shows up two ways here:</p>
+  <ul class="plain">
+    <li><strong>Card renders our Button itself</strong> for its dismiss control. It doesn't copy any Button CSS. If the Button changes, the Card's close button changes with it.</li>
+    <li><strong>Card is split into small parts</strong> (<code>CardHeader</code>, <code>CardTitle</code>, <code>CardContent</code>, <code>CardFooter</code>…) that the app arranges. The Card doesn't decide which buttons go in the footer. Whoever uses it does.</li>
+  </ul>
+
+  <div class="demo">
+    <span class="demo-label">Live preview</span>
+    <div class="demo-grid">
+      <article class="d-card">
+        <div class="d-card-header">
+          <div class="d-card-text">
+            <h4 class="d-card-title">Upgrade to Pro</h4>
+            <p class="d-card-desc">Unlimited projects and priority support.</p>
+          </div>
+        </div>
+        <p class="d-card-content">Your trial ends in 3 days. Upgrade now to keep everything you've built.</p>
+        <div class="d-card-footer">
+          <button class="d-btn d-secondary">Maybe later</button>
+          <button class="d-btn d-primary">Upgrade</button>
+        </div>
+      </article>
+      <article class="d-card d-card-elevated">
+        <div class="d-card-header">
+          <div class="d-card-text">
+            <h4 class="d-card-title">New: dark mode</h4>
+            <p class="d-card-desc">Switch themes from your profile settings.</p>
+          </div>
+          <button class="d-btn d-ghost d-sm d-card-dismiss" aria-label="Dismiss">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="d-card-footer" style="justify-content:flex-start">
+          <button class="d-btn d-ghost d-sm">Learn more</button>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <p>All the parts live in one file, since they only make sense together. Each part is a thin wrapper around a semantic HTML element, using the same <code>ComponentProps</code> + <code>cx</code> pattern as everything else.</p>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Card/Card.tsx">import type { ComponentProps } from 'react';
+import cx from 'classnames';
+import { Button } from '../Button/Button';
+import styles from './Card.module.css';
+
+/* ---------- Card ---------- */
+
+export type CardVariant = 'outlined' | 'elevated';
+
+export type CardProps = ComponentProps<'article'> & {
+  variant?: CardVariant;
+};
+
+export function Card({ variant = 'outlined', className, ...props }: CardProps) {
+  return <article className={cx(styles.card, styles[variant], className)} {...props} />;
+}
+
+/* ---------- Header (composes Button for dismiss) ---------- */
+
+export type CardHeaderProps = ComponentProps<'header'> & {
+  onDismiss?: () => void;
+  dismissLabel?: string;
+};
+
+export function CardHeader({
+  onDismiss,
+  dismissLabel = 'Dismiss',
+  className,
+  children,
+  ...props
+}: CardHeaderProps) {
+  return (
+    <header className={cx(styles.header, className)} {...props}>
+      <div className={styles.headerText}>{children}</div>
+
+      {onDismiss && (
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={dismissLabel}
+          onClick={onDismiss}
+          className={styles.dismiss}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path
+              d="M4 4l8 8M12 4l-8 8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </Button>
+      )}
+    </header>
+  );
+}
+
+/* ---------- Text parts ---------- */
+
+export function CardTitle({ className, ...props }: ComponentProps<'h3'>) {
+  return <h3 className={cx(styles.title, className)} {...props} />;
+}
+
+export function CardDescription({ className, ...props }: ComponentProps<'p'>) {
+  return <p className={cx(styles.description, className)} {...props} />;
+}
+
+export function CardContent({ className, ...props }: ComponentProps<'div'>) {
+  return <div className={cx(styles.content, className)} {...props} />;
+}
+
+/* ---------- Footer ---------- */
+
+export type CardFooterProps = ComponentProps<'footer'> & {
+  align?: 'start' | 'end' | 'between';
+};
+
+export function CardFooter({ align = 'end', className, ...props }: CardFooterProps) {
+  return (
+    <footer
+      className={cx(
+        styles.footer,
+        {
+          [styles.alignStart]: align === 'start',
+          [styles.alignEnd]: align === 'end',
+          [styles.alignBetween]: align === 'between',
+        },
+        className,
+      )}
+      {...props}
+    />
+  );
+}</script>
+
+  <div class="callout tip">
+    <strong class="label">Look at the dismiss button</strong>
+    <p>The Card passes <code>className={styles.dismiss}</code> to our Button. That class only sets a margin to tuck the button into the corner. It never touches colors or padding, so the Button stays in charge of looking like a Button. This is exactly why Button merges <code>className</code> with <code>cx</code> instead of replacing it.</p>
+  </div>
+
+  <script type="text/plain" data-lang="css" data-file="src/components/Card/Card.module.css">.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-sans);
+}
+
+/* ---- Variants ---- */
+.outlined {
+  border: 1px solid var(--color-border);
+}
+
+.elevated {
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-md);
+}
+
+/* ---- Header ---- */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* Layout only: pull the button into the corner. Its look stays the Button's job. */
+.dismiss {
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* ---- Body ---- */
+.content {
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+}
+
+/* ---- Footer ---- */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.alignStart {
+  justify-content: flex-start;
+}
+
+.alignEnd {
+  justify-content: flex-end;
+}
+
+.alignBetween {
+  justify-content: space-between;
+}</script>
+
+  <p>The stories are where composition really shows. Each one builds a different real-world card out of the same parts, plus the Button and Input you already made.</p>
+
+  <script type="text/plain" data-lang="tsx" data-file="src/components/Card/Card.stories.tsx">import type { Meta, StoryObj } from '@storybook/react-vite';
+import { fn } from 'storybook/test';
+import { Button } from '../Button/Button';
+import { Input } from '../Input/Input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from './Card';
+
+const meta = {
+  title: 'Components/Card',
+  component: Card,
+  tags: ['autodocs'],
+  args: { variant: 'outlined' },
+  argTypes: {
+    variant: { control: 'inline-radio', options: ['outlined', 'elevated'] },
+  },
+  // Cards stretch to fill their container, so give the preview a sensible width
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: 420 }}>
+        <Story />
+      </div>
+    ),
+  ],
+} satisfies Meta<typeof Card>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  render: (args) => (
+    <Card {...args}>
+      <CardHeader>
+        <CardTitle>Upgrade to Pro</CardTitle>
+        <CardDescription>Unlimited projects and priority support.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        Your trial ends in 3 days. Upgrade now to keep everything you've built.
+      </CardContent>
+      <CardFooter>
+        <Button variant="secondary">Maybe later</Button>
+        <Button>Upgrade</Button>
+      </CardFooter>
+    </Card>
+  ),
+};
+
+export const Elevated: Story = {
+  ...Default,
+  args: { variant: 'elevated' },
+};
+
+export const Dismissible: Story = {
+  render: (args) => (
+    <Card {...args}>
+      <CardHeader onDismiss={fn()}>
+        <CardTitle>New: dark mode</CardTitle>
+        <CardDescription>Switch themes from your profile settings.</CardDescription>
+      </CardHeader>
+      <CardFooter align="start">
+        <Button variant="ghost" size="sm">Learn more</Button>
+      </CardFooter>
+    </Card>
+  ),
+};
+
+export const WithForm: Story = {
+  render: (args) => (
+    <Card {...args}>
+      {/* display: contents lets the form's children sit in the card's layout */}
+      <form onSubmit={(event) => event.preventDefault()} style={{ display: 'contents' }}>
+        <CardHeader>
+          <CardTitle>Invite a teammate</CardTitle>
+          <CardDescription>They'll get an email with a link to join.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Input label="Email" type="email" placeholder="teammate@example.com" />
+        </CardContent>
+        <CardFooter align="between">
+          <Button variant="ghost">Copy link</Button>
+          <Button type="submit">Send invite</Button>
+        </CardFooter>
+      </form>
+    </Card>
+  ),
+};
+
+export const Destructive: Story = {
+  render: (args) => (
+    <Card {...args}>
+      <CardHeader>
+        <CardTitle>Delete this project?</CardTitle>
+        <CardDescription>This can't be undone. All files will be removed.</CardDescription>
+      </CardHeader>
+      <CardFooter>
+        <Button variant="secondary">Cancel</Button>
+        <Button variant="danger">Delete project</Button>
+      </CardFooter>
+    </Card>
+  ),
+};</script>
+
+  <div class="callout why">
+    <strong class="label">Why not a <code>primaryAction</code> prop?</strong>
+    <p>You could give Card props like <code>primaryActionLabel</code> and <code>onPrimaryAction</code>. It works until someone needs two buttons, a link, a disabled state or a form. Then the prop list grows forever. Accepting children and letting the app compose real Buttons covers every one of those cases with zero new props.</p>
+  </div>
+
+  <div class="try">
+    <h4>Try it yourself</h4>
+    <ul>
+      <li>Add a <code>CardMedia</code> part that renders an image flush to the card's top edge (hint: negative margins equal to the card's padding).</li>
+      <li>Build a <code>StatCard</code> that composes Card parts internally and takes just <code>label</code>, <code>value</code> and <code>trend</code> props. That's an even more advanced component built from this one.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 11. WRAP ============ -->
+<section id="wrap">
+  <p class="step-num">STEP 11</p>
+  <h2>Wrap up</h2>
+
+  <h3>Export everything from one place</h3>
+  <p>Apps that use your library should import from a single entry point, not dig through your folders. This file is your library's public API.</p>
+
+  <script type="text/plain" data-lang="ts" data-file="src/index.ts">import './styles/tokens.css';
+
+export { Button } from './components/Button/Button';
+export type { ButtonProps, ButtonVariant, ButtonSize } from './components/Button/Button';
+
+export { Input } from './components/Input/Input';
+export type { InputProps } from './components/Input/Input';
+
+export { TextArea } from './components/TextArea/TextArea';
+export type { TextAreaProps } from './components/TextArea/TextArea';
+
+export { RadioGroup } from './components/RadioGroup/RadioGroup';
+export type { RadioGroupProps, RadioOption } from './components/RadioGroup/RadioGroup';
+
+export { Checkbox } from './components/Checkbox/Checkbox';
+export type { CheckboxProps } from './components/Checkbox/Checkbox';
+
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from './components/Card/Card';
+export type { CardProps, CardVariant, CardHeaderProps, CardFooterProps } from './components/Card/Card';</script>
+
+  <h3>Check accessibility automatically</h3>
+  <p>The a11y addon runs automated accessibility checks against every story and reports problems in a panel.</p>
+
+  <script type="text/plain" data-lang="bash" data-file="Terminal">npx storybook add @storybook/addon-a11y</script>
+
+  <p>Restart Storybook and open the <strong>Accessibility</strong> tab on each story. Try deleting a <code>label</code> prop from an Input story and watch it flag the problem.</p>
+
+  <div class="finish">
+    <h2>What you built</h2>
+    <p>Five typed, accessible basic components and one advanced Card composed from them. Each owns its own styles, all share one token system, and every one has documented stories. That's the core of how production design systems work.</p>
+    <p><strong>Where to go next:</strong></p>
+    <ul>
+      <li><strong>Dark mode:</strong> redefine the semantic tokens inside <code>[data-theme='dark']</code>, then add a theme switcher to Storybook's toolbar.</li>
+      <li><strong>More components:</strong> Select, Switch, Tooltip and Dialog, all available as Radix primitives.</li>
+      <li><strong>Tests:</strong> add <code>play</code> functions to stories to simulate clicks and typing, then run them with Storybook's test addon.</li>
+      <li><strong>Publish it:</strong> configure Vite's library mode, generate type declarations with <code>vite-plugin-dts</code>, and <code>npm publish</code>.</li>
+      <li><strong>Deploy Storybook:</strong> <code>npm run build-storybook</code> outputs a static site you can host on Vercel and link from your resume.</li>
+    </ul>
+  </div>
+</section>
+
+  </main>
+</div>
+
+<button class="theme-toggle" type="button" id="theme-toggle">Toggle theme</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script>
+(function () {
+  // Turn each <script type="text/plain"> source block into a highlighted code card
+  document.querySelectorAll('script[type="text/plain"][data-lang]').forEach(function (src) {
+    var lang = src.dataset.lang;
+    var file = src.dataset.file || '';
+    var text = src.textContent.replace(/^\n/, '').replace(/\s+$/, '');
+
+    var fig = document.createElement('figure');
+    fig.className = 'code';
+
+    var head = document.createElement('div');
+    head.className = 'code-head';
+    var name = document.createElement('span');
+    name.className = 'file';
+    name.textContent = file;
+    var tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = lang;
+    name.appendChild(tag);
+
+    var btn = document.createElement('button');
+    btn.className = 'copy';
+    btn.type = 'button';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', function () {
+      var done = function () {
+        btn.textContent = 'Copied';
+        btn.classList.add('done');
+        setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+      };
+      try {
+        navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+      } catch (e) { fallbackCopy(text); done(); }
+    });
+
+    head.appendChild(name);
+    head.appendChild(btn);
+
+    var pre = document.createElement('pre');
+    var code = document.createElement('code');
+    code.className = 'language-' + lang;
+    code.textContent = text;
+    pre.appendChild(code);
+
+    fig.appendChild(head);
+    fig.appendChild(pre);
+    src.replaceWith(fig);
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+  }
+
+  if (window.Prism) Prism.highlightAll();
+
+  // Scrollspy for the step list
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        links.forEach(function (a) { a.classList.remove('active'); });
+        var link = byId[entry.target.id];
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  document.querySelectorAll('main section').forEach(function (s) { observer.observe(s); });
+
+  // Character counter in the TextArea preview
+  var bio = document.getElementById('dm-bio');
+  var count = document.getElementById('dm-bio-count');
+  if (bio && count) bio.addEventListener('input', function () { count.textContent = bio.value.length + ' / 200'; });
+
+  // Theme toggle
+  var root = document.documentElement;
+  var stored = null;
+  try { stored = localStorage.getItem('tutorial-theme'); } catch (e) {}
+  if (stored) root.setAttribute('data-theme', stored);
+  document.getElementById('theme-toggle').addEventListener('click', function () {
+    var current = root.getAttribute('data-theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('tutorial-theme', next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
